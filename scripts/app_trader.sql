@@ -59,18 +59,24 @@ FROM app_store_apps
 SELECT name, rating, CAST(price as money)
 FROM play_store_apps
 WHERE price IS NOT NULL
-ORDER BY price DESC;
+ORDER BY price;
 
 SELECT name, rating, CAST(price as money)
 FROM app_store_apps
 WHERE price IS NOT NULL
-ORDER BY price DESC;
+ORDER BY price;
 
+--the above gets me lowest prices from individual tables
 
+SELECT  p.name AS play_name, a.name AS ap_name , p.rating AS play_rating, a.rating AS ap_rating, CAST(p.price as money) AS play_money, CAST(a.price as money) AS ap_money
+FROM play_store_apps AS p
+INNER JOIN app_store_apps AS a
+USING (name)
+WHERE  p.price IS NOT NULL
+ORDER BY play_money;
 
-
-
-
+----in the above the goal was to find only apps with the same name in both tables, this resulted in duplicates, why?
+---moving forward, could probably stay with inner join and work up to filtering out dulpicates if they are that, and filtering for the rating on both, which the code below can be tweeked to do so
 
 
 
@@ -81,9 +87,7 @@ USING (name)
 WHERE p.rating IS NOT NULL
 	AND a.rating IS NOT NULL
 ORDER BY avg_rating DESC;
-
-
-
+---the above was born from team mate jeffrey emmons, this piece can be used to find avg_rating for when we have apps in both stores
 
 
 
