@@ -1,2 +1,80 @@
-SELECT COUNT(*)
-FROM app_store_apps
+SELECT *
+FROM play_store_apps;
+
+SELECT *
+FROM app_store_apps;
+
+
+--Gotta start somewhere
+/*SELECT 
+	a.name,
+	ROUND(((a.rating * p.rating)/2),1) AS avg_rating,
+	CAST(a.price AS money)
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name AND CAST(a.price as money) = CAST(p.price as money)
+ORDER BY avg_rating DESC, a.price*/
+
+--trying to fix the names
+/*
+SELECT 
+	lower(TRIM(a.name)) AS app_name,
+	ROUND(((a.rating * p.rating)/2),1) AS avg_rating,
+	CAST(a.price AS money)
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON lower(TRIM(a.name)) = lower(TRIM(p.name)) AND CAST(a.price as money) = CAST(p.price as money)
+ORDER BY avg_rating DESC, a.price*/
+
+--this one runs too long
+/*
+WITH both_name AS (SELECT 
+	LOWER(TRIM(a.name)) AS app_name
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON lower(TRIM(a.name))= lower(TRIM(p.name))
+GROUP BY app_name)
+
+SELECT 
+	b.app_name,
+	ROUND(((a.rating * p.rating)/2),1) AS avg_rating,
+	CAST(a.price AS money)
+FROM app_store_apps AS a
+INNER JOIN both_name AS b
+ON lower(TRIM(a.name))=b.app_name
+INNER JOIN play_store_apps AS p
+ON CAST(a.price as money) = CAST(p.price as money)
+ORDER BY avg_rating DESC, a.price
+LIMIT 20;*/
+
+--NOPE
+/*SELECT 
+	LOWER(TRIM(a.name)),
+	ROUND(((a.rating * p.rating)/2),1) AS avg_rating,
+	CAST(a.price AS money)
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON CAST(a.price as money) = CAST(p.price as money)
+WHERE LOWER(TRIM(a.name)) IN (SELECT 
+					LOWER(TRIM(a.name)) AS app_name
+					FROM app_store_apps AS a
+					INNER JOIN play_store_apps AS p
+					ON lower(TRIM(a.name))= lower(TRIM(p.name))
+					GROUP BY app_name)
+ORDER BY avg_rating DESC, a.price*/
+
+
+SELECT 
+	LOWER(TRIM(a.name)) AS app_name
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON lower(TRIM(a.name))= lower(TRIM(p.name))
+GROUP BY app_name
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
