@@ -13,10 +13,17 @@ INNER JOIN app_store_apps AS a
 USING (name)
 ORDER BY category DESC;
 
--- Working on deliverables a (reccomendataions)
+-- Simple Notes Read ME
 -- What the app trader is looking for:
 -- free to $1.00 is 10,000
 -- it is an exta 10k by the dollar
+-- perchase price of app if in both stores is based on the highest price
+-- Apps earn 5,000 per store
+-- Marketing = 1,000 per month
+-- Life span of app increases a year by each half point rating
+-- Ratings from both stores average to the nearest 0.5
+-- App Trader- wants to work with apps located in both stores
+
 
 
 
