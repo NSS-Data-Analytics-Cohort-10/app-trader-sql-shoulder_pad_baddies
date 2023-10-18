@@ -109,11 +109,19 @@ FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
 WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
-ORDER BY joined_rating DESC, joined_price
 )
 
 --Building out CTE to create multipliers
 
-SELECT *
-FROM joined;
+multiplier AS(
+SELECT
+	*,
+	CAST((joined_rating/.5) + 1 AS integer) AS lifespan_multiplier,
+	CASE
+		WHEN joined_location = 'Both' THEN 2
+		ELSE 1 END AS location_multiplier
+FROM joined
+)
+
+--Building out CTE to create price and costs
 
