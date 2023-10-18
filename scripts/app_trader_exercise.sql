@@ -55,3 +55,38 @@
 -- b. Develop a Top 10 List of the apps that App Trader should buy.
 
 -- c. Submit a report based on your findings. All analysis work must be done using PostgreSQL, however you may export query results to create charts in Excel for your report. 
+
+SELECT
+	a.name,
+	a.price,
+	a.rating,
+	(a.rating + p.rating)/2 AS avg_rating,
+	p.name,
+	p.price,
+	p.rating
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON LOWER(TRIM(a.name)) = LOWER(TRIM(p.name))
+ORDER BY avg_rating DESC, a.price, p.price;
+
+SELECT
+	CASE
+		WHEN a.name IS NOT NULL THEN a.name
+		WHEN p.name IS NOT NULL THEN p.name
+		END AS joined_name,
+	CASE
+		WHEN a.rating IS NOT NULL AND p.rating IS NOT NULL THEN ROUND(FLOOR((a.rating + p.rating))/2.0, 1)
+		WHEN p.rating IS NULL THEN ROUND(FLOOR(a.rating*2.0)/2.0,1)
+		WHEN a.rating IS NULL THEN ROUND(FLOOR(p.rating*2.0)/2.0,1)
+		END AS joined_rating
+	CASE
+		WHEN a.price = p.price--price case
+	FROM app_store_apps AS a
+FULL OUTER JOIN play_store_apps AS p
+USING(name)
+WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
+ORDER BY joined_rating DESC
+
+
+FLOOR(((a.rating + p.rating)/2)*2.0)/2.0 AS avg_rating
+
