@@ -75,14 +75,16 @@ ORDER BY avg_rating DESC, a.price, p.price;
 
 FLOOR(((a.rating + p.rating)/2)*2.0)/2.0 AS avg_rating
 
-select * from app_store_apps
+select * from app_store_apps order by rating desc, price
 
-select * from play_store_apps
+select * from play_store_apps order by rating, price
 
 
 --Work-for-exercise---------------------------------------------------------------------------------------------
 
---Buiding out for CTE
+--Buiding out for CTE to join tables
+
+WITH joined AS (
 SELECT
 	CASE
 		WHEN a.name IS NOT NULL THEN a.name
@@ -97,11 +99,21 @@ SELECT
 		WHEN p.price IS NULL OR CAST(a.price AS money) > CAST(p.price AS money) THEN CAST(a.price AS money)
 		WHEN a.price IS NULL OR CAST(a.price AS money) < CAST(p.price AS money) THEN CAST(p.price AS money)
 		WHEN CAST(a.price AS money) = CAST(p.price AS money) THEN CAST(a.price AS money)
-		END AS joined_price
+		END AS joined_price,
+	CASE
+		WHEN  a.name IS NOT NULL AND  p.name IS NOT NULL THEN 'Both'
+		WHEN a.name IS NOT NULL AND  p.name IS NULL THEN 'Store, App'
+		WHEN a.name IS NULL AND  p.name IS NOT NULL THEN 'Store, Play'
+		END AS joined_location
 FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
 WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
-ORDER BY joined_rating DESC, joined_price;
+ORDER BY joined_rating DESC, joined_price
+)
 
+--Building out CTE to create multipliers
+
+SELECT *
+FROM joined;
 
