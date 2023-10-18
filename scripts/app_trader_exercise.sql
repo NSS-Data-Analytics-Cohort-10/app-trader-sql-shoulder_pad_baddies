@@ -109,11 +109,11 @@ FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
 WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
-)
+),
 
 --Building out CTE to create multipliers
 
-multiplier AS(
+multipliers AS(
 SELECT
 	*,
 	CAST((joined_rating/.5) + 1 AS integer) AS lifespan_multiplier,
@@ -125,3 +125,15 @@ FROM joined
 
 --Building out CTE to create price and costs
 
+-- cashflow AS
+SELECT
+	joined_name AS name,
+	CAST(5000 * lifespan_multiplier * location_multiplier AS money) AS gross_profit,
+	CAST(1000 * lifespan_multiplier AS money) AS upkeep_cost,
+	CASE
+		WHEN joined_price <= CAST(1 AS money) THEN CAST(10000 AS money)
+		ELSE CAST(joined_price * 10000 AS money)
+		END AS purchase_cost
+FROM multipliers
+
+--
