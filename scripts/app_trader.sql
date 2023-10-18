@@ -73,6 +73,7 @@ ORDER BY price DESC;
 
 
 
+
 SELECT name, (a.rating * p.rating)/2 AS avg_rating
 FROM play_store_apps as p
 LEFT JOIN app_store_apps as a
