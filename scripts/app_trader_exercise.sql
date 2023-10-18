@@ -56,6 +56,8 @@
 
 -- c. Submit a report based on your findings. All analysis work must be done using PostgreSQL, however you may export query results to create charts in Excel for your report. 
 
+
+--Testing-Area--------------------------------------------------------------------------------------------------
 SELECT
 	a.name,
 	a.price,
@@ -69,6 +71,18 @@ INNER JOIN play_store_apps AS p
 ON LOWER(TRIM(a.name)) = LOWER(TRIM(p.name))
 ORDER BY avg_rating DESC, a.price, p.price;
 
+
+
+FLOOR(((a.rating + p.rating)/2)*2.0)/2.0 AS avg_rating
+
+select * from app_store_apps
+
+select * from play_store_apps
+
+
+--Work-for-exercise---------------------------------------------------------------------------------------------
+
+--Buiding out for CTE
 SELECT
 	CASE
 		WHEN a.name IS NOT NULL THEN a.name
@@ -78,15 +92,16 @@ SELECT
 		WHEN a.rating IS NOT NULL AND p.rating IS NOT NULL THEN ROUND(FLOOR((a.rating + p.rating))/2.0, 1)
 		WHEN p.rating IS NULL THEN ROUND(FLOOR(a.rating*2.0)/2.0,1)
 		WHEN a.rating IS NULL THEN ROUND(FLOOR(p.rating*2.0)/2.0,1)
-		END AS joined_rating
+		END AS joined_rating,
 	CASE
-		WHEN a.price = p.price--price case
-	FROM app_store_apps AS a
+		WHEN p.price IS NULL OR CAST(a.price AS money) > CAST(p.price AS money) THEN CAST(a.price AS money)
+		WHEN a.price IS NULL OR CAST(a.price AS money) < CAST(p.price AS money) THEN CAST(p.price AS money)
+		WHEN CAST(a.price AS money) = CAST(p.price AS money) THEN CAST(a.price AS money)
+		END AS joined_price
+FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
 WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
-ORDER BY joined_rating DESC
+ORDER BY joined_rating DESC, joined_price;
 
-
-FLOOR(((a.rating + p.rating)/2)*2.0)/2.0 AS avg_rating
 
