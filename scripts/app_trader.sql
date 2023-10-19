@@ -1,86 +1,80 @@
--- ### App Trader
--- Your team has been hired by a new company called App Trader to help them explore and gain insights from apps that are made available through the Apple App Store and Android Play Store. App Trader is a broker that purchases the rights to apps from developers in order to market the apps and offer in-app purchase. 
--- Unfortunately, the data for Apple App Store apps and Android Play Store Apps is located in separate tables with no referential integrity.
--- #### 1. Loading the data
--- a. Launch PgAdmin and create a new database called app_trader.  
--- b. Right-click on the app_trader database and choose `Restore...`  
--- c. Use the default values under the `Restore Options` tab. 
--- d. In the `Filename` section, browse to the backup file `app_store_backup.backup` in the data folder of this repository.  
--- e. Click `Restore` to load the database.  
--- f. Verify that you have two tables:  
---     - `app_store_apps` with 7197 rows  
---     - `play_store_apps` with 10840 rows
--- #### 2. Assumptions
--- Based on research completed prior to launching App Trader as a company, you can assume the following:
--- a. App Trader will purchase apps for 10,000 times the price of the app. For apps that are priced from free up to $1.00, the purchase price is $10,000.   
--- - For example, an app that costs $2.00 will be purchased for $20,000.  
--- - The cost of an app is not affected by how many app stores it is on. A $1.00 app on the Apple app store will cost the same as a $1.00 app on both stores.     
--- - If an app is on both stores, it's purchase price will be calculated based off of the highest app price between the two stores.
--- b. Apps earn $5000 per month, per app store it is on, from in-app advertising and in-app purchases, regardless of the price of the app.  
--- - An app that costs $200,000 will make the same per month as an app that costs $1.00. 
--- - An app that is on both app stores will make $10,000 per month. 
--- c. App Trader will spend an average of $1000 per month to market an app regardless of the price of the app. If App Trader owns rights to the app in both stores, it can market the app for both stores for a single cost of $1000 per month.    
--- - An app that costs $200,000 and an app that costs $1.00 will both cost $1000 a month for marketing, regardless of the number of stores it is in.
--- d. For every half point that an app gains in rating, its projected lifespan increases by one year. In other words, an app with a rating of 0 can be expected to be in use for 1 year, an app with a rating of 1.0 can be expected to last 3 years, and an app with a rating of 4.0 can be expected to last 9 years.   
--- - App store ratings should be calculated by taking the average of the scores from both app stores and rounding to the nearest 0.5.
--- e. App Trader would prefer to work with apps that are available in both the App Store and the Play Store since they can market both for the same $1000 per month.
--- #### 3. Deliverables
--- a. Develop some general recommendations as to the price range, genre, content rating, or anything else for apps that the company should target.
--- b. Develop a Top 10 List of the apps that App Trader should buy.
--- c. Submit a report based on your findings. All analysis work must be done using PostgreSQL, however you may export query results to create charts in Excel for your report. 
---------------------------------------------------------------------------------------------------------------------------------------
+--WHAT I KNOW: 
+--2 tables with no referential integrity
+--(price of app)* 10,000= purchase cost for A.T. (even if in both stores)
+--if it's in both stores purchase price is based on higher of the two prices
 
+--all apps earn 5000/ month/ store they are on regardless of ap price 1yr=60,000
 
-----------WHAT I KNOW: (price of app)* 10,000= purchase cost
-----------if it's in both stores the prce stays the same for both and if it is on both stores purchase price is based on higher of the two prices
------------all apps earn 5000/ month/ store they are on regardless of cost
----------1000/month is spent on marketing even if in both stores flat fee
----------0=1 year and any half point added to 0 adds a year of longevity ex: 0+6(.5)=3 year
----------A.T would like apps in both stores so that marketing stays at 1000 per month for both app stores (more for their money)
+--1000/month is spent on marketing even if in both stores 1yr= 12,000
 
-----------WHAT I WANT TO KNOW: 
-------------how to see if apps are reflected in both stores 
--------------what is the genreal price range, genre, content rating, etc of targeted apps
--------------what are the to 10 apps A.T. shoul buy 
+--Rating: 0=1 year and any half point added to 0 adds a year of longevity ex: (rating)/.5+1(yr)=longevity
+--App store ratings dervived by taking AVG(app+play) and rounding to nearest .5
+
+--A.T would like apps in both stores so that marketing stays at 1000 per month for both app stores (more for their money)
+
+--WHAT I WANT TO KNOW: 
+--What apps to target based on price range, genre, content rating, etc.?
+---from assumptions, A.T. should target apps in both store to cut sspending costs in marketing, and purchase price
+--should target apps with high ratings bc that means they have a longer longevity in the market and that A.T. has consistnet profit
+
+--What is a the top 10 list of apps A.T. should buy?
+
+--PLAN: case rank and over/partition can "add" columns to table: these can take care of purchase price, app earnings(from both), marketing cost, projected longevity, 
+--cte/subqueries, and joins can take care of finding lowest price, highest rating, 
 
 -------(side note from daniel) if you do anything with name trim them and then lowecase all-----
 
-
-
-
-
 SELECT *
 FROM play_store_apps
+WHERE name ='Netflix'
 
 SELECT *
 FROM app_store_apps
-------------------------------------------------------------------------------------------------------------
----CURRENTLY PLAYING AROUND WITH DATA TO MAKE SENSE OF IT, WILL START WORKING ON QUERYING FOR GUIDE SOON
+
+---------------------------------------------------------------------------------------------------
+--CURRENTLY PLAYING AROUND WITH DATA TO MAKE SENSE OF IT, WILL START WORKING ON QUERYING FOR GUIDE SOON
 SELECT name, rating, CAST(price as money)
 FROM play_store_apps
-WHERE price IS NOT NULL
+WHERE price IS NOT NULL AND rating IS NOT NULL	
+	OR rating >3
 ORDER BY price;
 
 SELECT name, rating, CAST(price as money)
 FROM app_store_apps
-WHERE price IS NOT NULL
+WHERE price IS NOT NULL AND rating IS NOT NULL	
+	OR rating >3
 ORDER BY price;
 
+SELECT a.name, p.name, p.rating, a.rating, a.price, p.price
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name=p.name
+	AND LOWER(a.primary_genre)=LOWER(p.category)
+WHERE a.price IS NOT NULL AND a.rating IS NOT NULL
+ORDER BY a.price;
+--can maybe rank on ratings and order price acs 
+--If using cast as money function, does that limit what i can do with price column as far as aggregations or comparisons?
+--only app store has numeric type for price, play store has a text type, can I change that later?
 --the above gets me lowest prices from individual tables
+--maybe use cast to chnage data type
 
 SELECT  p.name AS play_name, a.name AS ap_name , p.rating AS play_rating, a.rating AS ap_rating, CAST(p.price as money) AS play_money, CAST(a.price as money) AS ap_money
 FROM play_store_apps AS p
 INNER JOIN app_store_apps AS a
 USING (name)
-WHERE  p.price IS NOT NULL
-ORDER BY play_money;
+WHERE  p.price IS NOT NULL;
+---second way of doing the above with simple nested query
+SELECT *
+FROM play_store_apps
+WHERE name IN (
+			SELECT name 
+			FROM app_store_apps);
 
-----in the above the goal was to find only apps with the same name in both tables, this resulted in duplicates, why?
----moving forward, could probably stay with inner join and work up to filtering out dulpicates if they are that, and filtering for the rating on both, which the code below can be tweeked to do so
+----in the above the goal was to find only apps with the same name in both tables, this resulted in duplicates, why? after looking for specific  examples, play_store_apps have duplicate entries, some are exact entries and others vary in review count only
+--should i include distinct names?
 
 
-
-SELECT name, (a.rating * p.rating)/2 AS avg_rating
+SELECT name,ROUND((a.rating * p.rating)/2,3) AS avg_rating
 FROM play_store_apps as p
 LEFT JOIN app_store_apps as a
 USING (name)
@@ -92,4 +86,50 @@ ORDER BY avg_rating DESC;
 
 
 
+WITH avg_rating AS(
+	SELECT name, (a.rating + p.rating)/2 AS avg_rating
+	FROM play_store_apps as p
+	INNER JOIN app_store_apps as a
+	USING (name)
+	WHERE p.rating IS NOT NULL
+		AND a.rating IS NOT NULL
+	ORDER BY avg_rating DESC)
 
+
+SELECT 
+FROM
+
+SELECT p.name,				
+(CASE WHEN a.price > CAST(p.price as numeric) THEN a.price
+	WHEN  a.price < CAST(p.price as numeric)  THEN CAST(p.price as numeric)
+	WHEN  a.price = CAST(p.price as numeric) THEN CAST(p.price as numeric)
+	 END) AS purchase_price
+FROM play_store_apps as p
+INNER JOIN app_store_apps as a
+USING (name);
+
+--the above gives me ERROR:  invalid input syntax for type numeric: "$3.99 " 
+
+SELECT name,
+REPLACE(price, '$', '')::numeric AS play_price_numeric
+FROM play_store_apps
+
+--the above gets rid of the dollar sign from playstore apps and 
+WITH psa_num AS (																									SELECT name,
+					REPLACE(price, '$', '')::numeric AS play_price_numeric
+					FROM play_store_apps)
+SELECT a.name,				
+	(CASE 
+	 WHEN a.price = 0 THEN 1.00*10000
+	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
+	WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+	WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
+	
+	END) AS purchase_price
+	
+FROM app_store_apps as a
+INNER JOIN psa_num
+ON a.name=psa_num.name;
+
+--above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE)
