@@ -132,4 +132,4 @@ FROM app_store_apps as a
 INNER JOIN psa_num
 ON a.name=psa_num.name;
 
---above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE)
+--above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE )
