@@ -163,4 +163,43 @@ INNER JOIN psa_num
 ON a.name=psa_num.name;
 
 --above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE )
- 
+-- BELOW: ATTEMPTING TO COMBINe THE ABOVE 
+--remeber to include in earnings the fact that they are in both stores
+-- after
+
+
+WITH money_insights AS(																																	SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, 																ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
+						FROM play_store_apps as p
+						INNER JOIN app_store_apps as a
+						USING (name)
+						WHERE p.rating IS NOT NULL
+						AND a.rating IS NOT NULL
+						ORDER BY avg_rating DESC),
+psa_num AS (	
+					SELECT name,
+					REPLACE(price, '$', '')::numeric AS play_price_numeric
+					FROM play_store_apps)
+
+SELECT DISTINCT(a.name), money_insights.avg_rating, money_insights.longevity_years, money_insights.gross_earnings, money_insights.net_earings,
+	(CASE 
+	 WHEN a.price = 0 THEN 1.00*10000
+	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
+	WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+	WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
+	END) AS purchase_price
+	
+FROM app_store_apps as a
+INNER JOIN psa_num
+ON a.name=psa_num.name
+INNER JOIN money_insights
+ON a.name=money_insights.name
+ORDER BY money_insights.net_earings DESC
+LIMIT 10; 
+
+
+
+
+
+
+
