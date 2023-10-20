@@ -32,38 +32,40 @@ SELECT *
 FROM app_store_apps
 
 ---------------------------------------------------------------------------------------------------
---CURRENTLY PLAYING AROUND WITH DATA TO MAKE SENSE OF IT, WILL START WORKING ON QUERYING FOR GUIDE SOON
-SELECT name, rating, CAST(price as money)
-FROM play_store_apps
-WHERE price IS NOT NULL AND rating IS NOT NULL	
-	OR rating >3
-ORDER BY price;
+--PLAYING AROUND WITH DATA TO MAKE SENSE OF IT, WILL START WORKING ON QUERYING FOR GUIDE SOON:
+-- SELECT name, rating, CAST(price as money)
+-- FROM play_store_apps
+-- WHERE price IS NOT NULL AND rating IS NOT NULL	
+-- 	OR rating >3
+-- ORDER BY price;
 
-SELECT name, rating, CAST(price as money)
-FROM app_store_apps
-WHERE price IS NOT NULL AND rating IS NOT NULL	
-	OR rating >3
-ORDER BY price;
+-- SELECT name, rating, CAST(price as money)
+-- FROM app_store_apps
+-- WHERE price IS NOT NULL AND rating IS NOT NULL	
+-- 	OR rating >3
+-- ORDER BY price;
 
-SELECT a.name, p.name, p.rating, a.rating, a.price, p.price
-FROM app_store_apps AS a
-INNER JOIN play_store_apps AS p
-ON a.name=p.name
-	AND LOWER(a.primary_genre)=LOWER(p.category)
-WHERE a.price IS NOT NULL AND a.rating IS NOT NULL
-ORDER BY a.price;
+-- SELECT a.name, p.name, p.rating, a.rating, a.price, p.price
+-- FROM app_store_apps AS a
+-- INNER JOIN play_store_apps AS p
+-- ON a.name=p.name
+-- 	AND LOWER(a.primary_genre)=LOWER(p.category)
+-- WHERE a.price IS NOT NULL AND a.rating IS NOT NULL
+-- ORDER BY a.price;
 --can maybe rank on ratings and order price acs 
 --If using cast as money function, does that limit what i can do with price column as far as aggregations or comparisons?
 --only app store has numeric type for price, play store has a text type, can I change that later?
 --the above gets me lowest prices from individual tables
 --maybe use cast to chnage data type
 
-SELECT  p.name AS play_name, a.name AS ap_name , p.rating AS play_rating, a.rating AS ap_rating, CAST(p.price as money) AS play_money, CAST(a.price as money) AS ap_money
-FROM play_store_apps AS p
-INNER JOIN app_store_apps AS a
-USING (name)
-WHERE  p.price IS NOT NULL;
----second way of doing the above with simple nested query
+-- SELECT  p.name AS play_name, a.name AS ap_name , p.rating AS play_rating, a.rating AS ap_rating, CAST(p.price as money) AS play_money, CAST(a.price as money) AS ap_money
+-- FROM play_store_apps AS p
+-- INNER JOIN app_store_apps AS a
+-- USING (name)
+-- WHERE  p.price IS NOT NULL;
+---second way of doing the above with simple nested query (minus the price part will figure that out later)
+
+
 SELECT *
 FROM play_store_apps
 WHERE name IN (
@@ -74,50 +76,84 @@ WHERE name IN (
 --should i include distinct names?
 
 
-SELECT name,ROUND((a.rating * p.rating)/2,3) AS avg_rating
-FROM play_store_apps as p
-LEFT JOIN app_store_apps as a
-USING (name)
-WHERE p.rating IS NOT NULL
-	AND a.rating IS NOT NULL
-ORDER BY avg_rating DESC;
+-- SELECT name,(a.rating * p.rating)/2 AS avg_rating
+-- FROM play_store_apps as p
+-- LEFT JOIN app_store_apps as a
+-- USING (name)
+-- WHERE p.rating IS NOT NULL
+-- 	AND a.rating IS NOT NULL
+-- ORDER BY avg_rating DESC;
 ---the above was born from team mate jeffrey emmons, this piece can be used to find avg_rating for when we have apps in both stores
 
+-- SELECT name, (a.rating + p.rating)/2 AS avg_rating_no_r,ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+-- FROM play_store_apps as p
+-- INNER JOIN app_store_apps as a
+-- USING (name)
+-- WHERE p.rating IS NOT NULL
+-- 		AND a.rating IS NOT NULL
+-- ORDER BY avg_rating DESC
+--the above gets the avg of both ratings in the app store, but need to find a way to round it to nearest half point
 
 
-
-WITH avg_rating AS(
-	SELECT name, (a.rating + p.rating)/2 AS avg_rating
-	FROM play_store_apps as p
-	INNER JOIN app_store_apps as a
-	USING (name)
-	WHERE p.rating IS NOT NULL
-		AND a.rating IS NOT NULL
-	ORDER BY avg_rating DESC)
-
-
-SELECT 
-FROM
-
-SELECT p.name,				
-(CASE WHEN a.price > CAST(p.price as numeric) THEN a.price
-	WHEN  a.price < CAST(p.price as numeric)  THEN CAST(p.price as numeric)
-	WHEN  a.price = CAST(p.price as numeric) THEN CAST(p.price as numeric)
-	 END) AS purchase_price
+SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
 FROM play_store_apps as p
 INNER JOIN app_store_apps as a
-USING (name);
+USING (name)
+WHERE p.rating IS NOT NULL
+		AND a.rating IS NOT NULL
+ORDER BY avg_rating DESC
+--the above has the rating rounded to the nearest .5 (some of the rounding is questionable, will ask team to double check)
+--now below, I need to add on by finding the longevity, and then afterwards earnings based on longevity
+WITH a_r_rounded AS
+			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+			FROM play_store_apps as p
+			INNER JOIN app_store_apps as a
+			USING (name)
+			WHERE p.rating IS NOT NULL
+				AND a.rating IS NOT NULL
+				ORDER BY avg_rating DESC)
+SELECT a.name, a_r_rounded.avg_rating, ROUND((a_r_rounded.avg_rating/.5),0)+1 AS longevity_years
+FROM app_store_apps AS a
+JOIN a_r_rounded
+ON a.name=a_r_rounded.name
+--the above found longevity 
+
+
+WITH a_r_rounded AS
+			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+			FROM play_store_apps as p
+			INNER JOIN app_store_apps as a
+			USING (name)
+			WHERE p.rating IS NOT NULL
+				AND a.rating IS NOT NULL
+				ORDER BY avg_rating DESC)
+SELECT a.name, a_r_rounded.avg_rating, ROUND((a_r_rounded.avg_rating/.5),0)+1 AS longevity_years
+FROM app_store_apps AS a
+JOIN a_r_rounded
+ON a.name=a_r_rounded.name
+
+
+-- SELECT p.name,				
+-- (CASE WHEN a.price > CAST(p.price as numeric) THEN a.price
+-- 	WHEN  a.price < CAST(p.price as numeric)  THEN CAST(p.price as numeric)
+-- 	WHEN  a.price = CAST(p.price as numeric) THEN CAST(p.price as numeric)
+-- 	 END) AS purchase_price
+-- FROM play_store_apps as p
+-- INNER JOIN app_store_apps as a
+-- USING (name);
 
 --the above gives me ERROR:  invalid input syntax for type numeric: "$3.99 " 
-
-SELECT name,
-REPLACE(price, '$', '')::numeric AS play_price_numeric
-FROM play_store_apps
-
+-- SELECT name,
+-- REPLACE(price, '$', '')::numeric AS play_price_numeric
+-- FROM play_store_apps
 --the above gets rid of the dollar sign from playstore apps and 
-WITH psa_num AS (																									SELECT name,
+
+
+WITH psa_num AS (	
+					SELECT name,
 					REPLACE(price, '$', '')::numeric AS play_price_numeric
 					FROM play_store_apps)
+
 SELECT a.name,				
 	(CASE 
 	 WHEN a.price = 0 THEN 1.00*10000
@@ -125,7 +161,6 @@ SELECT a.name,
 	WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
 	WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
 	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
-	
 	END) AS purchase_price
 	
 FROM app_store_apps as a
