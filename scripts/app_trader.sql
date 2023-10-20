@@ -95,42 +95,38 @@ WHERE name IN (
 --the above gets the avg of both ratings in the app store, but need to find a way to round it to nearest half point
 
 
-SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+-- SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+-- FROM play_store_apps as p
+-- INNER JOIN app_store_apps as a
+-- USING (name)
+-- WHERE p.rating IS NOT NULL
+-- 		AND a.rating IS NOT NULL
+-- ORDER BY avg_rating DESC
+--the above has the rating rounded to the nearest .5 (some of the rounding is questionable, will ask team to double check) UPDATE: asked team, and I like their way of thinking about it, will tak eout the round, and use 
+--now below, I need to add on by finding the longevity, and then afterwards earnings based on longevity
+-- WITH a_r_rounded AS
+-- 			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+-- 			FROM play_store_apps as p
+-- 			INNER JOIN app_store_apps as a
+-- 			USING (name)
+-- 			WHERE p.rating IS NOT NULL
+-- 				AND a.rating IS NOT NULL
+-- 				ORDER BY avg_rating DESC)
+-- SELECT a.name, a_r_rounded.avg_rating, ROUND((a_r_rounded.avg_rating/.5),0)+1 AS longevity_years
+-- FROM app_store_apps AS a
+-- JOIN a_r_rounded
+-- ON a.name=a_r_rounded.name
+--the above found longevity
+--UPDATE: after speaking with teammates, I can put rating, longevity, earnings all in one without having to use cte
+
+SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
 FROM play_store_apps as p
 INNER JOIN app_store_apps as a
 USING (name)
 WHERE p.rating IS NOT NULL
-		AND a.rating IS NOT NULL
+AND a.rating IS NOT NULL
 ORDER BY avg_rating DESC
---the above has the rating rounded to the nearest .5 (some of the rounding is questionable, will ask team to double check)
---now below, I need to add on by finding the longevity, and then afterwards earnings based on longevity
-WITH a_r_rounded AS
-			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
-			FROM play_store_apps as p
-			INNER JOIN app_store_apps as a
-			USING (name)
-			WHERE p.rating IS NOT NULL
-				AND a.rating IS NOT NULL
-				ORDER BY avg_rating DESC)
-SELECT a.name, a_r_rounded.avg_rating, ROUND((a_r_rounded.avg_rating/.5),0)+1 AS longevity_years
-FROM app_store_apps AS a
-JOIN a_r_rounded
-ON a.name=a_r_rounded.name
---the above found longevity 
-
-
-WITH a_r_rounded AS
-			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
-			FROM play_store_apps as p
-			INNER JOIN app_store_apps as a
-			USING (name)
-			WHERE p.rating IS NOT NULL
-				AND a.rating IS NOT NULL
-				ORDER BY avg_rating DESC)
-SELECT a.name, a_r_rounded.avg_rating, ROUND((a_r_rounded.avg_rating/.5),0)+1 AS longevity_years
-FROM app_store_apps AS a
-JOIN a_r_rounded
-ON a.name=a_r_rounded.name
+--the above gave me avg-rating, longevity, and eargings before and after marketing cost
 
 
 -- SELECT p.name,				
@@ -141,7 +137,6 @@ ON a.name=a_r_rounded.name
 -- FROM play_store_apps as p
 -- INNER JOIN app_store_apps as a
 -- USING (name);
-
 --the above gives me ERROR:  invalid input syntax for type numeric: "$3.99 " 
 -- SELECT name,
 -- REPLACE(price, '$', '')::numeric AS play_price_numeric
@@ -168,3 +163,4 @@ INNER JOIN psa_num
 ON a.name=psa_num.name;
 
 --above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE )
+ 
