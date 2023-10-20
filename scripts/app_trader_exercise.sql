@@ -140,8 +140,8 @@ SELECT
 	joined_name AS name,
 	joined_location AS location,
 	joined_rating AS rating,
-	CAST(5000 * lifespan_multiplier * location_multiplier AS money) AS gross_profit,
-	CAST(1000 * lifespan_multiplier AS money) AS upkeep_cost,
+	CAST(5000 * lifespan_multiplier * location_multiplier * 12 AS money) AS gross_profit,
+	CAST(1000 * lifespan_multiplier * 12 AS money) AS upkeep_cost,
 	CASE
 		WHEN joined_price <= CAST(1 AS money) THEN CAST(10000 AS money)
 		ELSE CAST(joined_price * 10000 AS money)
