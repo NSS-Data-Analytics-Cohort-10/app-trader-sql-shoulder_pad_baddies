@@ -1,58 +1,38 @@
--- Filtering apps based on price, rating, category, and whether they are both in play and app store
-SELECT name, a. price, a. rating, category, p.price , p.rating, genres
-FROM app_store_apps AS a
-INNER JOIN play_store_apps AS p
-USING(name)
-GROUP BY name, a.price, a.rating, category, p.price, p.rating, genres
-ORDER BY a.rating*p.rating/2 DESC;
 
---- Top category for the apps
-SELECT name, category, p. rating as play_rating, a.rating as app_rating
-FROM play_store_apps AS p
-INNER JOIN app_store_apps AS a
-USING (name)
-ORDER BY category DESC;
+SELECT name, genres, GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC)) AS price, ROUND(AVG(a.rating+p.rating/1000.0),2) as app_rating,
 
--- Simple Notes Read ME
--- What the app trader is looking for:
--- free to $1.00 is 10,000 for purchase
--- it is an exta 10k by the dollar
--- purchase price of app if in both stores is based on the highest price
--- Apps earn 5,000 per store
--- Marketing = 1,000 per month
--- Life span of app increases a year by each half point rating
--- Ratings from both stores average to the nearest 0.5
--- App Trader- wants to work with apps located in both stores
-
--- Deliverables
---general recommendations as to the price range, genre, content rating, or anything else for apps that the company should target.
--- Develop a Top 10 List of the apps that App Trader should buy.
-
-
--- Work on large query in chunks
-
--- Query with name , genre, category price of app in both stores and avg rating of both apps
-SELECT name,
-     REPLACE(price, '$', '')::numeric AS play_price_numeric
-     FROM play_store_apps
-
-SELECT name, genres, category, a.price as android_app_price, MAX(CAST(REPLACE(p.price, '$', '')AS NUMERIC)) as play_app_price, ROUND(AVG(a.rating+p.rating/2.0),2) as avg_rating
-FROM app_store_apps as a
-JOIN play_store_apps as p
-USING (name)
-GROUP BY name, genres,category, a.price, p.price			
-ORDER by ROUND(AVG(a.rating+p.rating/2.0),2) DESC;
-
--- Query to start using CASE WHEN to narrow for App Trader look-fors
-SELECT name, genres, category, GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC)) AS price, ROUND(AVG(a.rating+p.rating/2.0),2) as avg_rating,
-CASE WHEN (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 0 AND 1.00 THEN '10,000'
+CASE WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 0 AND 1.00 THEN '10,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 1.01 AND 2.00 THEN '20,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 2.01 AND 3.00 THEN '30,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 3.01 AND 4.00 THEN '40,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 4.01 AND 5.00 THEN '50,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 5.01 AND 6.00 THEN '60,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 1.01 AND 2.00 THEN '20,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 6.01 AND 7.00 THEN '70,000'
+	 WHEN  (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 7.01 AND 8.00 THEN '80,000'
 ELSE 'above'
-END AS purchase_price
+END AS purchase_price,
+
+CASE WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)= 0 THEN '1 year'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=.5 THEN '2 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=1.0 THEN '3 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=1.5 THEN '4 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)= 2.0 THEN '5 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=2.5 THEN '6 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=3.0 THEN '7 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=3.5 THEN '8 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=4.0 THEN '9 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=4.5 THEN '10 years'
+	 WHEN ROUND(AVG(a.rating+p.rating/1000.0),2)=5.0 THEN '11 years'
+ELSE 'over'
+END AS app_lifespan
+
 FROM app_store_apps as a
 JOIN play_store_apps as p
 USING (name)
-GROUP BY name, genres,category, a.price, p.price			
-ORDER by ROUND(AVG(a.rating+p.rating/2.0),2) DESC;
+GROUP BY name, genres, a.price, p.price			
+ORDER by ROUND(AVG(a.rating+p.rating/1000.0),2) DESC
+LIMIT 10;
 
 
 
