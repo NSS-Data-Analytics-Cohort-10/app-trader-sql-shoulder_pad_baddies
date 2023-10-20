@@ -44,15 +44,15 @@ GROUP BY name, genres,category, a.price, p.price
 ORDER by ROUND(AVG(a.rating+p.rating/2.0),2) DESC;
 
 -- Query to start using CASE WHEN to narrow for App Trader look-fors
-SELECT  name, genres, a. price, p.price, category, ROUND(AVG(a.rating+p.rating/2.0),2) AS avg_rating, REPLACE(price '$','')
+SELECT name, genres, category, GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC)) AS price, ROUND(AVG(a.rating+p.rating/2.0),2) as avg_rating,
+CASE WHEN (GREATEST(a.price , CAST(REPLACE(p.price, '$', '')AS NUMERIC))) BETWEEN 0 AND 1.00 THEN '10,000'
+ELSE 'above'
+END AS purchase_price
 FROM app_store_apps as a
 JOIN play_store_apps as p
 USING (name)
-GROUP BY name,  a.rating, p.rating, genres, category
-ORDER by ROUND(AVG(a.rating+p.rating/2.0),2) DESC
+GROUP BY name, genres,category, a.price, p.price			
+ORDER by ROUND(AVG(a.rating+p.rating/2.0),2) DESC;
 
 
-
-SELECT rating
-FROM play_store_apps;
 
