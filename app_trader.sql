@@ -65,7 +65,9 @@ USING (name)
 
 --avg rating
 SELECT 
-ROUND((((a.rating+p.rating)/2/.5+1), 1) AS longevity)
+ROUND((((a.rating+p.rating)/2)/.5+1), 1) AS longevity, CAST(ROUND(((((a.rating+p.rating)/2)/.5+1)*120000-1200),1) AS MONEY) AS income
 FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING (name)
+
+ROUND(a.rating+p.rating),1/2
