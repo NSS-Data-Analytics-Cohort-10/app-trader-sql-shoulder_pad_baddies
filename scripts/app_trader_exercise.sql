@@ -91,9 +91,9 @@ SELECT
 		WHEN p.name IS NOT NULL THEN p.name
 		END AS joined_name,
 	CASE
-		WHEN a.rating IS NOT NULL AND p.rating IS NOT NULL THEN ROUND(FLOOR((a.rating + p.rating))/2.0, 1)
-		WHEN p.rating IS NULL THEN ROUND(FLOOR(a.rating*2.0)/2.0,1)
-		WHEN a.rating IS NULL THEN ROUND(FLOOR(p.rating*2.0)/2.0,1)
+		WHEN a.rating IS NOT NULL AND p.rating IS NOT NULL THEN ROUND((a.rating + p.rating)/2.0, 2)
+		WHEN p.rating IS NULL THEN ROUND(a.rating, 2)
+		WHEN a.rating IS NULL THEN ROUND(p.rating, 2)
 		END AS joined_rating,
 	CASE
 		WHEN p.price IS NULL OR CAST(a.price AS money) > CAST(p.price AS money) THEN CAST(a.price AS money)
@@ -104,7 +104,17 @@ SELECT
 		WHEN  a.name IS NOT NULL AND  p.name IS NOT NULL THEN 'Both'
 		WHEN a.name IS NOT NULL AND  p.name IS NULL THEN 'Store, App'
 		WHEN a.name IS NULL AND  p.name IS NOT NULL THEN 'Store, Play'
-		END AS joined_location
+		END AS joined_location,
+	CASE
+		WHEN  a.primary_genre IS NOT NULL AND  p.genres IS NOT NULL THEN a.primary_genre
+		WHEN a.primary_genre IS NOT NULL AND  p.genres IS NULL THEN a.primary_genre
+		WHEN a.primary_genre IS NULL AND  p.genres IS NOT NULL THEN p.genres
+		END AS joined_genres,
+	CASE
+		WHEN  a.content_rating IS NOT NULL AND  p.content_rating IS NOT NULL THEN p.content_rating
+		WHEN a.content_rating IS NOT NULL AND  p.content_rating IS NULL THEN a.content_rating
+		WHEN a.content_rating IS NULL AND  p.content_rating IS NOT NULL THEN p.content_rating
+		END AS joined_content
 FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
@@ -121,13 +131,15 @@ SELECT
 		WHEN joined_location = 'Both' THEN 2
 		ELSE 1 END AS location_multiplier
 FROM joined
-)
+),
 
 --Building out CTE to create price and costs
 
--- cashflow AS
+cashflow AS(
 SELECT
 	joined_name AS name,
+	joined_location AS location,
+	joined_rating AS rating,
 	CAST(5000 * lifespan_multiplier * location_multiplier AS money) AS gross_profit,
 	CAST(1000 * lifespan_multiplier AS money) AS upkeep_cost,
 	CASE
@@ -135,5 +147,34 @@ SELECT
 		ELSE CAST(joined_price * 10000 AS money)
 		END AS purchase_cost
 FROM multipliers
+),
 
---
+--Building out CTE to find add on genre and content rating
+
+genre_content AS(
+SELECT
+	DISTINCT(c.*),
+	j.joined_genres AS genre,
+	CASE
+		WHEN j.joined_content = '4+' THEN 'Everyone'
+		WHEN j.joined_content = '9+' THEN 'Everyone 10+'
+		WHEN j.joined_content = '12+' THEN 'Teen'
+		WHEN j.joined_content = '17+' THEN 'Mature 17+'
+		ELSE j.joined_content END AS content_rating
+FROM cashflow AS c
+LEFT JOIN joined AS j
+ON c.name = j.joined_name
+)
+
+--Final Select Query
+
+SELECT
+	name,
+	location,
+	rating,
+	genre,
+	content_rating,
+	gross_profit - (purchase_cost + upkeep_cost) AS net_profit
+FROM genre_content
+ORDER BY net_profit DESC, rating DESC, location
+LIMIT 10
