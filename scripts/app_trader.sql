@@ -24,13 +24,13 @@
 
 -------(side note from daniel) if you do anything with name trim them and then lowecase all-----
 
-SELECT *
-FROM play_store_apps
-WHERE name ='Netflix'
+-- SELECT *
+-- FROM play_store_apps
+-- WHERE name ='H*nest Meditation'
 
-SELECT *
-FROM app_store_apps
-
+-- SELECT *
+-- FROM app_store_apps
+-- WHERE name ='H*nest Meditation'
 ---------------------------------------------------------------------------------------------------
 --PLAYING AROUND WITH DATA TO MAKE SENSE OF IT, WILL START WORKING ON QUERYING FOR GUIDE SOON:
 -- SELECT name, rating, CAST(price as money)
@@ -66,11 +66,11 @@ FROM app_store_apps
 ---second way of doing the above with simple nested query (minus the price part will figure that out later)
 
 
-SELECT *
-FROM play_store_apps
-WHERE name IN (
-			SELECT name 
-			FROM app_store_apps);
+-- SELECT *
+-- FROM play_store_apps
+-- WHERE name IN (
+-- 			SELECT name 
+-- 			FROM app_store_apps);
 
 ----in the above the goal was to find only apps with the same name in both tables, this resulted in duplicates, why? after looking for specific  examples, play_store_apps have duplicate entries, some are exact entries and others vary in review count only
 --should i include distinct names?
@@ -102,7 +102,9 @@ WHERE name IN (
 -- WHERE p.rating IS NOT NULL
 -- 		AND a.rating IS NOT NULL
 -- ORDER BY avg_rating DESC
---the above has the rating rounded to the nearest .5 (some of the rounding is questionable, will ask team to double check) UPDATE: asked team, and I like their way of thinking about it, will tak eout the round, and use 
+--the above has the rating rounded to the nearest .5 (some of the rounding is questionable, will ask team to double check) 
+
+--UPDATE: asked team, and I like their way of thinking about it, will tak eout the round, and use 
 --now below, I need to add on by finding the longevity, and then afterwards earnings based on longevity
 -- WITH a_r_rounded AS
 -- 			(SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
@@ -119,14 +121,35 @@ WHERE name IN (
 --the above found longevity
 --UPDATE: after speaking with teammates, I can put rating, longevity, earnings all in one without having to use cte
 
-SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
+-- SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
+-- FROM play_store_apps as p
+-- INNER JOIN app_store_apps as a
+-- USING (name)
+-- WHERE p.rating IS NOT NULL
+-- AND a.rating IS NOT NULL
+-- ORDER BY avg_rating DESC
+
+
+-- SELECT name, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating
+-- FROM play_store_apps as p
+-- INNER JOIN app_store_apps as a
+-- USING (name)
+-- WHERE p.rating IS NOT NULL
+-- 		AND a.rating IS NOT NULL
+-- ORDER BY avg_rating DESC
+--the above gave me avg-rating, longevity, and eargings before and after marketing cost. UPDATE: need to do mathematic corrections. Worked on Below:
+
+
+
+SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating_rounded, ROUND(ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1,0) AS longevity_years, CAST(ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0) AS MONEY)*120000 AS gross_earnings, CAST((ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0)*120000)-12000 AS MONEY) AS net_earnings
 FROM play_store_apps as p
 INNER JOIN app_store_apps as a
 USING (name)
 WHERE p.rating IS NOT NULL
-AND a.rating IS NOT NULL
+		AND a.rating IS NOT NULL
 ORDER BY avg_rating DESC
---the above gave me avg-rating, longevity, and eargings before and after marketing cost
+
+
 
 
 -- SELECT p.name,				
@@ -163,43 +186,129 @@ INNER JOIN psa_num
 ON a.name=psa_num.name;
 
 --above is how to get purchase price, later will need to add this to something that filters rating to get longevity (USE THE ABOVE )
--- BELOW: ATTEMPTING TO COMBINe THE ABOVE 
+-- BELOW: ATTEMPTING TO COMBINE THE ABOVE 
 --remeber to include in earnings the fact that they are in both stores
 -- after
+-- WITH money_insights AS(																																	SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, 																ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
+-- 						FROM play_store_apps as p
+-- 						INNER JOIN app_store_apps as a
+-- 						USING (name)
+-- 						WHERE p.rating IS NOT NULL
+-- 						AND a.rating IS NOT NULL
+-- 						ORDER BY avg_rating DESC),
+-- psa_num AS (	
+-- 					SELECT name,
+-- 					REPLACE(price, '$', '')::numeric AS play_price_numeric
+-- 					FROM play_store_apps)
+
+-- SELECT DISTINCT(a.name), money_insights.avg_rating, money_insights.longevity_years, money_insights.gross_earnings, money_insights.net_earings,
+-- 	(CASE 
+-- 	 WHEN a.price = 0 THEN 1.00*10000
+-- 	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
+-- 	WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+-- 	WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+-- 	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
+-- 	END) AS purchase_price
+	
+-- FROM app_store_apps as a
+-- INNER JOIN psa_num
+-- ON a.name=psa_num.name
+-- INNER JOIN money_insights
+-- ON a.name=money_insights.name
+-- ORDER BY money_insights.net_earings DESC
+-- LIMIT 10; 
+----------------------------------------------------------------------------------------------------------------------
+--UPDATED version: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000.
 
 
-WITH money_insights AS(																																	SELECT name, ROUND((a.rating + p.rating)/2,2) AS avg_rating, ROUND((a.rating + p.rating)/2/.5+1,1) AS 									longevity_years, ROUND(((((a.rating + p.rating)/2)/.5+1)*12000),2) AS gross_earnings, 																ROUND((((((a.rating + p.rating)/2)/.5+1)*12000)-12000), 2) AS net_earings
-						FROM play_store_apps as p
-						INNER JOIN app_store_apps as a
-						USING (name)
-						WHERE p.rating IS NOT NULL
+-- WITH money_insights AS(																																
+-- 						SELECT name
+-- 					  	,ROUND((a.rating + p.rating)/2,3) AS avg_rating 
+-- 					   ,ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating_rounded
+-- 					   ,ROUND(ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1,0) AS estimated_lifespan
+-- 					   ,CAST(ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0) AS MONEY)*120000 AS 													estimated_gross_earnings
+-- 					   ,CAST((ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0)*120000)-12000 AS MONEY) AS 											estimated_net_earnings
+-- 					FROM play_store_apps as p
+-- 					INNER JOIN app_store_apps as a
+-- 					USING (name)
+-- 					WHERE p.rating IS NOT NULL
+-- 						AND a.rating IS NOT NULL
+-- 					ORDER BY avg_rating DESC)
+-- ,psa_num AS(	
+-- 			SELECT name 
+-- 			    ,REPLACE(price, '$', '')::numeric AS play_price_numeric
+-- 			FROM play_store_apps)
+-- SELECT DISTINCT(a.name)  
+-- 	,a.primary_genre
+-- 	,a.content_rating
+-- 	,CAST((CASE 
+-- 	 WHEN a.price = 0 THEN 1.00*10000
+-- 	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
+-- 	 WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+-- 	 WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+-- 	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
+-- 	END)AS MONEY) AS purchase_price
+-- 	,money_insights.avg_rating
+-- 	,money_insights.avg_rating_rounded
+-- 	,money_insights.estimated_lifespan 
+-- 	,money_insights.estimated_gross_earnings
+-- 	,money_insights.estimated_net_earnings
+-- FROM app_store_apps as a
+-- INNER JOIN psa_num
+-- ON a.name=psa_num.name
+-- INNER JOIN money_insights
+-- ON a.name=money_insights.name
+-- WHERE play_price_numeric = 0 AND a.price = 0
+-- ORDER BY money_insights.avg_rating DESC
+-- LIMIT 10; 
+
+--------------------------------------------------------------------------------------------------------------------------
+--UPDATED version: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000
+
+--no 100% happy with this, would have liked to have added a rank for the top 10, but when i tried to incorporate it would pull in past top 10. there is a way to rank on top 10, but can not get there with the time I have
+--FINAL QUERY:
+WITH money_insights AS(																																
+						SELECT name 
+						,p.review_count
+					  	,ROUND((a.rating + p.rating)/2,3) AS avg_rating 
+					   ,ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating_rounded
+					   ,ROUND(ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1,0) AS estimated_lifespan
+					   ,CAST(ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0) AS MONEY)*120000 AS estimated_gross_earnings
+					   ,CAST((ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0)*120000)-12000 AS MONEY) AS     																															estimated_net_earnings
+					FROM play_store_apps as p
+					INNER JOIN app_store_apps as a
+					USING (name)
+					WHERE p.rating IS NOT NULL
 						AND a.rating IS NOT NULL
-						ORDER BY avg_rating DESC),
-psa_num AS (	
-					SELECT name,
-					REPLACE(price, '$', '')::numeric AS play_price_numeric
-					FROM play_store_apps)
-
-SELECT DISTINCT(a.name), money_insights.avg_rating, money_insights.longevity_years, money_insights.gross_earnings, money_insights.net_earings,
-	(CASE 
+					ORDER BY avg_rating DESC)
+,psa_num AS(	
+			SELECT name 
+			    ,REPLACE(price, '$', '')::numeric AS play_price_numeric
+			FROM play_store_apps)
+SELECT DISTINCT(a.name)  
+	,a.primary_genre
+	,a.content_rating
+	,CAST(a.review_count as numeric) AS count_of_reviews
+	,CAST((CASE 
 	 WHEN a.price = 0 THEN 1.00*10000
 	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
-	WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
-	WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+	 WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+	 WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
 	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
-	END) AS purchase_price
-	
+	END)AS MONEY) AS purchase_price
+	,money_insights.avg_rating
+	,money_insights.avg_rating_rounded
+	,money_insights.estimated_lifespan 
+	,money_insights.estimated_gross_earnings
+	,money_insights.estimated_net_earnings
 FROM app_store_apps as a
 INNER JOIN psa_num
 ON a.name=psa_num.name
 INNER JOIN money_insights
 ON a.name=money_insights.name
-ORDER BY money_insights.net_earings DESC
+WHERE play_price_numeric= 0 AND a.price=0
+ORDER BY money_insights.avg_rating DESC
 LIMIT 10; 
-
-
-
-
 
 
 
