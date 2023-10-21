@@ -72,7 +72,7 @@ INNER JOIN play_store_apps AS p
 ON lower(TRIM(a.name))= lower(TRIM(p.name))
 GROUP BY app_name*/
 		  
-SELECT
+/*SELECT
 	(CASE WHEN p.name IS NULL THEN a.name
 		  WHEN a.name IS NULL THEN p.name
 	      WHEN p.name IS NOT NULL AND a.name IS NOT NULL THEN a.name ELSE 'Booger' END) AS app_name,
@@ -84,11 +84,11 @@ FROM app_store_apps AS a
 FULL JOIN play_store_apps AS p
 ON lower(trim(a.name)) = lower(trim(p.name)) AND CAST(a.price AS money) = CAST(p.price AS money)
 WHERE CAST(a.price AS money) = CAST(p.price AS Money)
-ORDER BY avg_rating DESC, a.price
+ORDER BY avg_rating DESC, a.price*/
 
 --Gets the same result
 
-SELECT
+/*SELECT
 		   a.name AS app_name
 		  ,CAST((a.price*10000) AS money) AS app_cost
 		  ,ROUND(((a.rating * p.rating)/2),1) AS avg_rating
@@ -98,9 +98,11 @@ FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
 ON lower(trim(a.name)) = lower(trim(p.name)) AND CAST(a.price AS money) = CAST(p.price AS money)
 WHERE CAST(a.price AS money) = CAST(p.price AS Money)
-ORDER BY avg_rating DESC, a.price
+ORDER BY avg_rating DESC, a.price*/
 
 
+
+--This one is my main contender for a result to the question
 
 WITH num AS (
 SELECT
@@ -108,7 +110,7 @@ SELECT
 		  ,CASE WHEN a.price = 0 THEN CAST(10000 AS money)
 			ELSE CAST((a.price*10000) AS money) END AS app_cost
 		  ,ROUND(((a.rating + p.rating)/2),1) AS avg_rating
-		  ,ROUND((((a.rating + p.rating)/2)/.5+1),1) AS lifespan
+		  ,ROUND((((a.rating + p.rating)/2)/.5+1),1)  AS lifespan
 		  ,CAST(ROUND(((((a.rating + p.rating)/2)/.5+1)*120000-12000),1) AS money) AS total_income
 FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
@@ -130,6 +132,7 @@ GROUP BY num.app_name
 	,num.lifespan
 	,num.total_income
 ORDER BY net_income DESC
+LIMIT 15
 
 
 --Looking at genres 
@@ -137,8 +140,10 @@ ORDER BY net_income DESC
 SELECT 
 	LOWER(TRIM(a.name)) AS app_name
 	,a.primary_genre
-	,p.genres
-	,ROUND(((a.rating * p.rating)/2),1) AS avg_rating
+	,p.genres --Taken out cause the category varies too much
+	,ROUND(((a.rating + p.rating)/2),1) AS avg_rating
+	,a.rating
+	,p.rating
 FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
 ON lower(TRIM(a.name)) = lower(TRIM(p.name)) AND CAST(a.price AS money) = CAST(p.price AS money)
@@ -147,7 +152,16 @@ GROUP BY
 	,a.primary_genre
 	,p.genres
 	,avg_rating
+	,a.rating
+	,p.rating
 ORDER BY avg_rating DESC
+LIMIT 
+
+--Play store had most varied genres. Seeing about sorting out just the games
+SELECT
+	genres
+FROM play_store_apps
+GROUP BY genres
 
 --Games seem to be the most highly rated genre = greatest longevity. ~161 different games with 30% being rated above 4.5
 
@@ -159,7 +173,7 @@ SELECT
 FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
 ON lower(TRIM(a.name)) = lower(TRIM(p.name)) AND CAST(a.price AS money) = CAST(p.price AS money)
-WHERE ROUND(((a.rating + p.rating)/2),1) > 4.5 AND a.primary_genre ='Games' OR p.genres = 'Arcade' 
+WHERE ROUND(((a.rating + p.rating)/2),1) > 4.5
 GROUP BY 
 	app_name
 	,a.primary_genre
@@ -189,4 +203,4 @@ GROUP BY
 	,avg_rating
 ORDER BY avg_rating DESC
 
---Play Store tends to have a higher review count as well as more 
+--Play Store tends to have a higher review count as well as more, more phones
