@@ -217,8 +217,8 @@ ON a.name=psa_num.name;
 -- ON a.name=money_insights.name
 -- ORDER BY money_insights.net_earings DESC
 -- LIMIT 10; 
-----------------------------------------------------------------------------------------------------------------------
---UPDATED version: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000.
+-- ----------------------------------------------------------------------------------------------------------------------
+-- UPDATED version: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000.
 
 
 -- WITH money_insights AS(																																
@@ -258,15 +258,22 @@ ON a.name=psa_num.name;
 -- ON a.name=psa_num.name
 -- INNER JOIN money_insights
 -- ON a.name=money_insights.name
--- WHERE play_price_numeric = 0 AND a.price = 0
 -- ORDER BY money_insights.avg_rating DESC
 -- LIMIT 10; 
 
---------------------------------------------------------------------------------------------------------------------------
---UPDATED version: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000
 
---no 100% happy with this, would have liked to have added a rank for the top 10, but when i tried to incorporate it would pull in past top 10. there is a way to rank on top 10, but can not get there with the time I have
---FINAL QUERY:
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--UPDATED version of FINAL QUERY: this will give name of the apps in both stores, avg raiting, avg rating rounded from where the longevity and and money insights were derived, and where all purchase prices are 10,000 (this may be a smarter business strategy buying for less and earning more in the long run)
+--not 100% happy with this, would have liked to have added a rank for the top 10, but when i tried to incorporate it would pull in past top 10. there is a way to rank on top 10, but can not get there with the time I have
+--FINAL QUERY: slightly different from teammates on earnings and some orders. One clear difference was on how we filtered (i filtered on avg rating not rounded) and I chose to only look at companies that were free to download for the public, so that purchase price stayed at 10,000 for the "client". 
+--we went on to present Jeffry's data, due to the fact that it was closer to what the deliverables wanted and his query was very organized and the logic was sound
+-- the difference there is that he did not only look at apps where price was 0, and about one or two paid apps did make it into the final list, but the profits far outweighed the fact that it is a paid app
+--the order difference between ours could also be attributed to what we filtered on, but over all we had many similar rankings in our final queries
+
+
 WITH money_insights AS(																																
 						SELECT name 
 						,p.review_count
@@ -310,5 +317,47 @@ WHERE play_price_numeric= 0 AND a.price=0
 ORDER BY money_insights.avg_rating DESC
 LIMIT 10; 
 
+--Query from above, without the 10 LIMIT
 
 
+WITH money_insights AS(																																
+						SELECT name 
+						,p.review_count
+					  	,ROUND((a.rating + p.rating)/2,3) AS avg_rating 
+					   ,ROUND(ROUND((a.rating + p.rating),0)/2,1) AS avg_rating_rounded
+					   ,ROUND(ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1,0) AS estimated_lifespan
+					   ,CAST(ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0) AS MONEY)*120000 AS estimated_gross_earnings
+					   ,CAST((ROUND((ROUND(ROUND((a.rating + p.rating),0)/2,1)/.5+1),0)*120000)-12000 AS MONEY) AS     																															estimated_net_earnings
+					FROM play_store_apps as p
+					INNER JOIN app_store_apps as a
+					USING (name)
+					WHERE p.rating IS NOT NULL
+						AND a.rating IS NOT NULL
+					ORDER BY avg_rating DESC)
+,psa_num AS(	
+			SELECT name 
+			    ,REPLACE(price, '$', '')::numeric AS play_price_numeric
+			FROM play_store_apps)
+SELECT DISTINCT(a.name)  
+	,a.primary_genre
+	,a.content_rating
+	,CAST(a.review_count as numeric) AS count_of_reviews
+	,CAST((CASE 
+	 WHEN a.price = 0 THEN 1.00*10000
+	 WHEN psa_num.play_price_numeric = 0 THEN 1.00* 10000
+	 WHEN a.price > psa_num.play_price_numeric THEN a.price * 10000
+	 WHEN a.price< psa_num.play_price_numeric THEN psa_num.play_price_numeric * 10000
+	 WHEN a.price = psa_num.play_price_numeric THEN a.price * 10000
+	END)AS MONEY) AS purchase_price
+	,money_insights.avg_rating
+	,money_insights.avg_rating_rounded
+	,money_insights.estimated_lifespan 
+	,money_insights.estimated_gross_earnings
+	,money_insights.estimated_net_earnings
+FROM app_store_apps as a
+INNER JOIN psa_num
+ON a.name=psa_num.name
+INNER JOIN money_insights
+ON a.name=money_insights.name
+WHERE play_price_numeric= 0 AND a.price=0
+ORDER BY money_insights.avg_rating DESC;
