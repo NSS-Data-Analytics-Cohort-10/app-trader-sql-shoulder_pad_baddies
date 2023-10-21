@@ -80,6 +80,7 @@ select * from app_store_apps order by rating desc, price
 select * from play_store_apps order by rating, price
 
 
+
 --Work-for-exercise---------------------------------------------------------------------------------------------
 
 --Buiding out for CTE to join tables
@@ -114,8 +115,15 @@ SELECT
 		WHEN  a.content_rating IS NOT NULL AND  p.content_rating IS NOT NULL THEN p.content_rating
 		WHEN a.content_rating IS NOT NULL AND  p.content_rating IS NULL THEN a.content_rating
 		WHEN a.content_rating IS NULL AND  p.content_rating IS NOT NULL THEN p.content_rating
-		END AS joined_content
-FROM app_store_apps AS a
+		END AS joined_content,
+	CASE
+		WHEN  a.review_count IS NOT NULL AND  p.review_count IS NOT NULL THEN CAST(a.review_count AS integer) + p.review_count
+		WHEN a.review_count IS NOT NULL AND  p.review_count IS NULL THEN CAST(a.review_count AS integer)
+		WHEN a.review_count IS NULL AND  p.review_count IS NOT NULL THEN p.review_count
+		END AS joined_rating_count
+FROM (SELECT
+	  	DISTINCT *
+	  FROM app_store_apps) AS a
 FULL OUTER JOIN play_store_apps AS p
 USING(name)
 WHERE a.rating IS NOT NULL OR p.rating IS NOT NULL
@@ -153,7 +161,7 @@ FROM multipliers
 
 genre_content AS(
 SELECT
-	DISTINCT(c.*),
+	DISTINCT c.*,
 	j.joined_genres AS genre,
 	CASE
 		WHEN j.joined_content = '4+' THEN 'Everyone'
@@ -174,7 +182,8 @@ SELECT
 	rating,
 	genre,
 	content_rating,
-	gross_profit - (purchase_cost + upkeep_cost) AS net_profit
+	purchase_cost,
+	(gross_profit - (purchase_cost + upkeep_cost)) AS net_profit
 FROM genre_content
 ORDER BY net_profit DESC, rating DESC, location
 LIMIT 10
