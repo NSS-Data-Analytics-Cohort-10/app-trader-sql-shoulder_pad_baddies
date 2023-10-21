@@ -67,21 +67,6 @@ FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING (name)
 
---avg rating
-SELECT a.name, p.name,
-ROUND((((a.rating+p.rating)/2)/.5+1), 1) AS longevity, CAST(ROUND(((((a.rating+p.rating)/2)/.5+1)*120000-1200),1) AS MONEY) AS income,
-CASE WHEN a.name is NOT NULL and p.name IS NULL THEN 'app'
-WHEN p.name is NOT NULL AND a.name IS NULL THEN 'play'
-WHEN a.name IS NOT NULL AND p.name IS NOT NULL THEN 'both'
-END AS store,
-CASE WHEN a.price IS NULL or cast(a.price AS money) < cast(p.price AS money) THEN cast(p.price AS money)
-WHEN p.price IS NULL or cast (a.price AS money) > cast(p.price AS MONEY) THEN CAST (a.price AS money)
-END AS price_listed
-FROM app_store_apps AS a
-FULL OUTER JOIN play_store_apps AS p
-USING (name)
-GROUP BY a.name, p.name, a.price, p.price, longevity, income, store
-ORDER BY income ASC
 
 --Tells the store
 SELECT a.name, p.name, 
@@ -93,3 +78,19 @@ FROM app_store_apps AS a
 FULL OUTER JOIN play_store_apps AS p
 USING (name)
 GROUP BY a.name, p.name
+
+--final answer
+SELECT a.name, p.name,
+ROUND((((a.rating+p.rating)/2)/.5+1), 1) AS longevity, CAST(ROUND(((((a.rating+p.rating)/2)/.5+1)*120000-1200),1) AS MONEY) AS income,
+CASE WHEN a.name is NOT NULL and p.name IS NULL THEN 'app'
+WHEN p.name is NOT NULL AND a.name IS NULL THEN 'play'
+WHEN a.name IS NOT NULL AND p.name IS NOT NULL THEN 'both'
+END AS store,
+CASE WHEN a.price IS NULL or cast(a.price AS money) < cast(p.price AS money) THEN (cast(p.price AS money)*10000)
+WHEN p.price IS NULL or cast (a.price AS money) > cast(p.price AS MONEY) THEN (CAST(a.price AS money)*10000)
+END AS purchase_cost
+FROM app_store_apps AS a
+FULL OUTER JOIN play_store_apps AS p
+USING (name)
+GROUP BY a.name, p.name, a.price, p.price, longevity, income, store
+ORDER BY income ASC
